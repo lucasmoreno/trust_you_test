@@ -86,39 +86,39 @@ class IncludedResourceParams
   # @return [Array] an Array of Symbols and/or Hashes compatible with ActiveRecord
   # `includes`
   def model_includes
-    parse_for_active_record_includes(included_resources)
+    parse_for_active_record_includes(included_resources.uniq)
   end
 
   private
   
-  # @param resources [Array]
+  # @param resources [Array<String>]
   # @param scope_elements [Array]
   # @return [Array]
   def parse_for_active_record_includes(resources, scope_elements = [])
-    resources ||= included_resources
-    return_value = []
-    scope_elements ||= []
     resources.each do |resource|
-      if resource.include?('.')
-        key = resource[0..resource.index('.')-1].to_sym
-        resto = resource[resource.index('.')+1..resource.length]
-        hash_dessa_chave = scope_elements.find { |return_element| return_element.is_a?(Hash) && return_element.has_key?(key) }
+      if matches = resource.match(/^(?<key>.+?)\.(?<ending>.+)$/)
+        key = matches[:key].to_sym
+        ending = matches[:ending]
+        # element_hash = scope_elements.find { |element| element.is_a?(Hash) && element.has_key?(key) }
+        element_hash = find_hash_with_key(scope_elements, key)
 
-        new_key = false
-        if !hash_dessa_chave
-          new_key = true
-          scope_elements << { key => [] }
+        if !element_hash
+          element_hash = { key => [] }
+          scope_elements << element_hash
         end
-        hash_dessa_chave = scope_elements.find { |return_element| return_element.is_a?(Hash) && return_element.has_key?(key) }
 
-        parse_for_active_record_includes([resto], hash_dessa_chave[key])
-
-        new_key ? return_value << hash_dessa_chave : return_value = [hash_dessa_chave]
+        parse_for_active_record_includes([ending], element_hash[key])
       else
         scope_elements << resource.to_sym
-        return_value = scope_elements
       end
     end
-    return_value
+    scope_elements
+  end
+
+  # @param array [Array]
+  # @param key [String]
+  # @return [Hash, nil]
+  def find_hash_with_key(array, key)
+    array.find { |element| element.is_a?(Hash) && element.has_key?(key) }
   end
 end

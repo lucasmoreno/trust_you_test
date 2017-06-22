@@ -29,8 +29,12 @@
 # Create your solution as a private fork, and send us the URL.
 #
 class IncludedResourceParams
+  # @!attribute [r] include_param
+  #   @return [String]
+  attr_reader :include_param
 
-  def initialize(include_param)
+  # @param include_param [String]
+  def initialize(include_param:)
     @include_param = include_param
   end
 
@@ -40,7 +44,7 @@ class IncludedResourceParams
   #
   # @return [Boolean] whether this instance has included resources
   def has_included_resources?
-    # TODO: implement me
+    @has_included_resources ||= included_resources.any?
   end
 
   ##
@@ -53,10 +57,16 @@ class IncludedResourceParams
   # @example "foo,foo.bar,baz.*"
   #   IncludedResourceParams.new("foo,bar,baz.*").included_resources => ["foo", "foo.bar"]
   #
-  # @return [Array] an Array of Strings parsed from the include param with
+  # @return [Array<String>] an Array of Strings parsed from the include param with
   # wildcard includes removed
   def included_resources
-    # TODO: implement me
+    @included_resources ||= begin
+      include_param ? include_param.split(',').reject { |param| param.match(/\*/) } : []
+    end
+  end
+
+  def rejected_characters
+    @rejected_characters ||= ['\*']
   end
 
   ##

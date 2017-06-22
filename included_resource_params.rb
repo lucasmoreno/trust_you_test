@@ -86,74 +86,39 @@ class IncludedResourceParams
   # @return [Array] an Array of Symbols and/or Hashes compatible with ActiveRecord
   # `includes`
   def model_includes
-    # TODO: implement me
-  end
-end
-
-require 'test/unit'
-class TestIncludedResourceParams < Test::Unit::TestCase
-  # Tests for #has_included_resources?
-  def test_has_included_resources_is_false_when_nil
-    r = IncludedResourceParams.new(nil)
-    assert r.has_included_resources? == false
+    parse_for_active_record_includes(included_resources)
   end
 
-  def test_has_included_resources_is_false_when_only_wildcards
-    include_string = 'foo.**'
-    r = IncludedResourceParams.new(include_string)
-    assert r.has_included_resources? == false
-  end
+  private
+  
+  # @param resources [Array]
+  # @param scope_elements [Array]
+  # @return [Array]
+  def parse_for_active_record_includes(resources, scope_elements = [])
+    resources ||= included_resources
+    return_value = []
+    scope_elements ||= []
+    resources.each do |resource|
+      if resource.include?('.')
+        key = resource[0..resource.index('.')-1].to_sym
+        resto = resource[resource.index('.')+1..resource.length]
+        hash_dessa_chave = scope_elements.find { |return_element| return_element.is_a?(Hash) && return_element.has_key?(key) }
 
-  def test_has_included_resources_is_true_with_non_wildcard_params
-    include_string = 'foo'
-    r = IncludedResourceParams.new(include_string)
-    assert r.has_included_resources?
-  end
+        new_key = false
+        if !hash_dessa_chave
+          new_key = true
+          scope_elements << { key => [] }
+        end
+        hash_dessa_chave = scope_elements.find { |return_element| return_element.is_a?(Hash) && return_element.has_key?(key) }
 
-  def test_has_included_resources_is_true_with_both_wildcard_and_non_params
-    include_string = 'foo,bar.**'
-    r = IncludedResourceParams.new(include_string)
-    assert r.has_included_resources?
-  end
+        parse_for_active_record_includes([resto], hash_dessa_chave[key])
 
-  # Tests for #included_resources
-  def test_included_resources_always_returns_array
-    r = IncludedResourceParams.new(nil)
-    assert r.included_resources == []
-  end
-
-  def test_included_resources_returns_only_non_wildcards
-    r = IncludedResourceParams.new('foo,foo.bar,baz.*,bat.**')
-    assert r.included_resources == ['foo', 'foo.bar']
-  end
-
-  # Tests for #model_includes
-  def test_model_includes_when_params_nil
-    assert IncludedResourceParams.new(nil).model_includes == []
-  end
-
-  def test_model_includes_one_single_level_resource
-    assert IncludedResourceParams.new('foo').model_includes == [:foo]
-  end
-
-  def test_model_includes_multiple_single_level_resources
-    assert IncludedResourceParams.new('foo,bar').model_includes == [:foo, :bar]
-  end
-
-  def test_model_includes_single_two_level_resource
-    assert IncludedResourceParams.new('foo.bar').model_includes == [{:foo => [:bar]}]
-  end
-
-  def test_model_includes_multiple_two_level_resources
-    assert IncludedResourceParams.new('foo.bar,foo.bat').model_includes == [{:foo => [:bar, :bat]}]
-    assert IncludedResourceParams.new('foo.bar,baz.bat').model_includes == [{:foo => [:bar]}, {:baz => [:bat]}]
-  end
-
-  def test_model_includes_three_level_resources
-    assert IncludedResourceParams.new('foo.bar.baz').model_includes == [{:foo => [{:bar => [:baz]}]}]
-  end
-
-  def test_model_includes_multiple_three_level_resources
-    assert IncludedResourceParams.new('foo.bar.baz,foo,foo.bar.bat,bar').model_includes == [{:foo => [{:bar => [:baz, :bat]}]}, :foo, :bar]
+        new_key ? return_value << hash_dessa_chave : return_value = [hash_dessa_chave]
+      else
+        scope_elements << resource.to_sym
+        return_value = scope_elements
+      end
+    end
+    return_value
   end
 end

@@ -144,6 +144,6 @@ class TestIncludedResourceParams < Test::Unit::TestCase
   end
 
   def test_model_includes_multiple_three_level_resources
-    assert IncludedResourceParams.new('foo.bar.baz,foo,foo.bar.bat,bar').model_includes == [{:foo => [{:bar => [:baz, :bat]}]}, :bar]
+    assert IncludedResourceParams.new('foo.bar.baz,foo,foo.bar.bat,bar').model_includes == [{:foo => [{:bar => [:baz, :bat]}]}, :foo, :bar]
   end
 end

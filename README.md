@@ -3,8 +3,10 @@
 There is only one class in this repository that is responsible for parsing a string containing a comma separated list of associated resources to include with a request (http://jsonapi.org/format/#fetching-includes).
 
 ## Setup
-`gem install bundler`
-`bundle install`
+```
+gem install bundler
+bundle install
+```
 
 ## How to use it
 Open `irb` and call the public instance methods from `IncludedResourceParams` class.

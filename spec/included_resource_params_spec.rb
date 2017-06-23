@@ -98,7 +98,7 @@ describe IncludedResourceParams do
     context 'when it receives multiple three level resources' do
       let(:include_param) { 'foo.bar.baz,foo,foo.bar.bat,bar' }
 
-      it { is_expected.to eq [{:foo => [{:bar => [:baz, :bat]}]}, :foo, :bar] }
+      it { is_expected.to eq [{:foo => [{:bar => [:baz, :bat]}]}, :bar] }
     end
   end
 end

@@ -3,8 +3,7 @@ require_relative '../included_resource_params'
 describe IncludedResourceParams do
   subject(:parser) { IncludedResourceParams.new(include_param) }
 
-  let(:include_param) { include_param_array.join(',') }
-  let(:include_param_array) { %w(foo foo.bar foo.*) }
+  let(:include_param) { 'foo,foo.bar,foo.*' }
 
   describe '#has_included_resources?' do
     subject { parser.has_included_resources? }
@@ -77,13 +76,13 @@ describe IncludedResourceParams do
       it { is_expected.to eq [{:foo => [:bar]}] }
     end
 
-    context 'when it receives multiple two level resources from the same table' do
+    context 'when it receives multiple two level resources from the same relationship' do
       let(:include_param) { 'foo.bar,foo.bat' }
 
       it { is_expected.to eq [{:foo => [:bar, :bat]}] }
     end
 
-    context 'when it receives multiple two level resource from different tables' do
+    context 'when it receives multiple two level resource from different relationships' do
       let(:include_param) { 'foo.bar,baz.bat' }
 
       it { is_expected.to eq [{:foo => [:bar]}, {:baz => [:bat]}] }

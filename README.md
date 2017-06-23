@@ -3,6 +3,7 @@
 There is only one class in this repository that is responsible for parsing a string containing a comma separated list of associated resources to include with a request (http://jsonapi.org/format/#fetching-includes).
 
 ## Setup
+`gem install bundler`
 `bundle install`
 
 ## How to use it
@@ -18,10 +19,10 @@ included_resource_params.model_includes # => [{:foo=>[{:bar=>[{:baz=>[{:tar=>[:f
 ## Unit tests
 I decided to use RSpec but I kept exactly the same test scenarios.
 ### Run RSpec
-`bundle exec rspec`
+`bundle exec rspec --format documentation`
 
 ## Source code
 [GitHub repository](https://github.com/lucasmoreno/trust_you_test)
 
 ## Why not codepen?
-I decided to not use codepad because it does not support some features from newer Ruby versions such as named parameters.
+I decided not to use codepad because it does not support some features from newer Ruby versions like named parameters.

@@ -64,9 +64,9 @@ class IncludedResourceParams
   # wildcard includes removed
   def included_resources
     @included_resources ||= begin
-      return [] unless include_param
+      return [] if include_param.nil?
 
-      include_param.split(RESOURCES_SEPARATOR_CHAR).reject { |resource| invalid_resource?(resource) }
+      include_param.split(RESOURCES_SEPARATOR_CHAR).uniq.reject { |resource| invalid_resource?(resource) }
     end
   end
 
@@ -87,7 +87,7 @@ class IncludedResourceParams
   # @return [Array] an Array of Symbols and/or Hashes compatible with ActiveRecord
   # `includes`
   def model_includes
-    @model_includes ||= parse_for_active_record_includes(resources: included_resources.uniq)
+    @model_includes ||= parse_for_active_record_includes(resources: included_resources)
   end
 
   private
@@ -102,7 +102,7 @@ class IncludedResourceParams
   end
 
   ##
-  # A regexp used to ignore resources with invalid characters in #included_resources return
+  # A regexp used to ignore resources with invalid characters in #included_resources
   #
   # @return [Regexp]
   def rejected_characters_regexp
@@ -110,7 +110,7 @@ class IncludedResourceParams
   end
 
   ##
-  # Recursively, parses the given resources to ActiveRecord's `includes` method format.
+  # Recursively, parses the given resources to ActiveRecord's `includes` method format
   #
   # @param resources [Array<String>] an Array with resources to be parsed
   # @param parent_relationships [Array<Object>] an Array contaning the relationships from the previous recursion iteration
@@ -124,7 +124,7 @@ class IncludedResourceParams
         # To ensure that it won't return an Array with repeated relationships. e.g. [:foo, {foo: [:bar]}]
         parent_relationships.delete(relationship_name)
 
-        current_relationships = find_hash_with_key(array: parent_relationships, key: relationship_name)
+        current_relationships = find_hash_with_key(array: parent_relationships, key: relationship_name) if parent_relationships.any?
 
         if !current_relationships
           current_relationships = { relationship_name => [] }
@@ -143,7 +143,7 @@ class IncludedResourceParams
   end
 
   ##
-  # Finds the Hash with the given `key` in the given `array`.
+  # Finds the Hash in the given `array` with the given `key`
   #
   # @param array [Array] an Array of Symbols and/or Hashes
   # @param key [String] the `key` to be found

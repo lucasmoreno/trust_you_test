@@ -1,7 +1,7 @@
 require_relative '../included_resource_params'
 
 describe IncludedResourceParams do
-  subject(:parser) { IncludedResourceParams.new(include_param: include_param) }
+  subject(:parser) { IncludedResourceParams.new(include_param) }
 
   let(:include_param) { include_param_array.join(',') }
   let(:include_param_array) { %w(foo foo.bar foo.*) }

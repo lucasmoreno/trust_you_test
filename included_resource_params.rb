@@ -29,12 +29,15 @@
 # Create your solution as a private fork, and send us the URL.
 #
 class IncludedResourceParams
+  RESOURCES_SEPARATOR_CHAR = ','
+  RESOURCES_REJECTED_CHARS = %w(\*)
+
   # @!attribute [r] include_param
   #   @return [String]
   attr_reader :include_param
 
   # @param include_param [String]
-  def initialize(include_param:)
+  def initialize(include_param)
     @include_param = include_param
   end
 
@@ -61,12 +64,10 @@ class IncludedResourceParams
   # wildcard includes removed
   def included_resources
     @included_resources ||= begin
-      include_param ? include_param.split(',').reject { |param| param.match(/\*/) } : []
-    end
-  end
+      return [] unless include_param
 
-  def rejected_characters
-    @rejected_characters ||= ['\*']
+      include_param.split(RESOURCES_SEPARATOR_CHAR).reject { |resource| invalid_resource?(resource) }
+    end
   end
 
   ##
@@ -86,39 +87,68 @@ class IncludedResourceParams
   # @return [Array] an Array of Symbols and/or Hashes compatible with ActiveRecord
   # `includes`
   def model_includes
-    parse_for_active_record_includes(included_resources.uniq)
+    @model_includes ||= parse_for_active_record_includes(resources: included_resources.uniq)
   end
 
   private
-  
-  # @param resources [Array<String>]
-  # @param scope_elements [Array]
-  # @return [Array]
-  def parse_for_active_record_includes(resources, scope_elements = [])
-    resources.each do |resource|
-      if matches = resource.match(/^(?<key>.+?)\.(?<ending>.+)$/)
-        key = matches[:key].to_sym
-        ending = matches[:ending]
-        # element_hash = scope_elements.find { |element| element.is_a?(Hash) && element.has_key?(key) }
-        element_hash = find_hash_with_key(scope_elements, key)
 
-        if !element_hash
-          element_hash = { key => [] }
-          scope_elements << element_hash
-        end
-
-        parse_for_active_record_includes([ending], element_hash[key])
-      else
-        scope_elements << resource.to_sym
-      end
-    end
-    scope_elements
+  ##
+  # Check if the given resource have any invalid character
+  #
+  # @param resource [String]
+  # @return [Boolean]
+  def invalid_resource?(resource)
+    !!resource.match(rejected_characters_regexp)
   end
 
-  # @param array [Array]
-  # @param key [String]
-  # @return [Hash, nil]
-  def find_hash_with_key(array, key)
+  ##
+  # A regexp used to ignore resources with invalid characters in #included_resources return
+  #
+  # @return [Regexp]
+  def rejected_characters_regexp
+    @rejected_characters_regexp ||= %r{(#{RESOURCES_REJECTED_CHARS.join('|')})}
+  end
+
+  ##
+  # Recursively, parses the given resources to ActiveRecord's `includes` method format.
+  #
+  # @param resources [Array<String>] an Array with resources to be parsed
+  # @param parent_relationships [Array<Object>] an Array contaning the relationships from the previous recursion iteration
+  # @return [Array] an Array of Symbols and/or Hashes compatible with ActiveRecord's `includes` method
+  def parse_for_active_record_includes(resources:, parent_relationships: [])
+    resources.each do |resource|
+      if matches = resource.match(/^(?<relationship_name>.+?)\.(?<nested_relationships>.+)$/)
+        relationship_name = matches[:relationship_name].to_sym
+        nested_relationships = matches[:nested_relationships]
+
+        # To ensure that it won't return an Array with repeated relationships. e.g. [:foo, {foo: [:bar]}]
+        parent_relationships.delete(relationship_name)
+
+        current_relationships = find_hash_with_key(array: parent_relationships, key: relationship_name)
+
+        if !current_relationships
+          current_relationships = { relationship_name => [] }
+          parent_relationships << current_relationships
+        end
+
+        parse_for_active_record_includes(resources: [nested_relationships], parent_relationships: current_relationships[relationship_name])
+      else
+        relationship_name = resource.to_sym
+        unless find_hash_with_key(array: parent_relationships, key: relationship_name)
+          parent_relationships << relationship_name
+        end
+      end
+    end
+    parent_relationships
+  end
+
+  ##
+  # Finds the Hash with the given `key` in the given `array`.
+  #
+  # @param array [Array] an Array of Symbols and/or Hashes
+  # @param key [String] the `key` to be found
+  # @return [Hash, nil] the Hash which contains the given `key`
+  def find_hash_with_key(array:, key:)
     array.find { |element| element.is_a?(Hash) && element.has_key?(key) }
   end
 end
